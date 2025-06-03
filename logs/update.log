@@ -1,0 +1,12 @@
+2025-06-03 01:05:49 WARNING (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/Users/rogerioabramoalvespretti/embrapa-vitivinicultura-api/.venv/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-06-03 01:05:49 INFO Usuário padrão 'admin' criado com senha 'admin123'.
+2025-06-03 01:05:50 INFO NOVO: Comercio.csv (2024-05-09 14:09)
+2025-06-03 01:10:18 INFO NOVO: Comercio.csv (2024-05-09 14:09)
+2025-06-03 01:10:57 INFO NOVO: Comercio.csv (2024-05-09 14:09)
+2025-06-03 01:11:49 INFO NOVO: Comercio.csv (2024-05-09 14:09)
+2025-06-03 01:18:06 INFO NOVO: Comercio.csv (2024-05-09 14:09)
