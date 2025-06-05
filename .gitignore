@@ -1,5 +1,6 @@
-# Virtualenv
 .venv/
 __pycache__/
-*.pyc
-.DS_Store
+data/raw/*
+data/processed/embrapa.db
+logs/*.log
+models/*.pkl

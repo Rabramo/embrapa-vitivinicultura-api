@@ -1,3 +1,4 @@
+#%% IMPORTAÇÃO DAS DEPENDÊNCIAS
 import os
 import json
 import logging
@@ -13,9 +14,9 @@ import pickle
 
 from passlib.context import CryptContext
 
-# ===============================
-# CONFIGURAÇÕES GERAIS
-# ===============================
+
+#%% CONFIGURAÇÕES GERAIS
+
 BASE_URL = "http://vitibrasil.cnpuv.embrapa.br/download/"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 PASTA_RAW = os.path.join(DATA_DIR, "raw")
@@ -26,9 +27,8 @@ MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
 FORECAST_MODEL_PATH = os.path.join(MODELS_DIR, "forecast_producao_rs.pkl")
 FORMATO_DATA = "%Y-%m-%d %H:%M"
 
-# ===============================
-# CONFIGURAÇÃO DE LOG
-# ===============================
+#%% CONFIGURAÇÃO DE LOG
+
 LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 logging.basicConfig(
@@ -38,9 +38,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-# ===============================
-# CONTEXTO PASSLIB PARA SENHA
-# ===============================
+#%% FUNÇÕES CTLE USUÁRIOS E DADOS, SYNC E PROCESSAMENTO
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def criar_tabela_usuarios():
@@ -124,45 +123,29 @@ def baixar_arquivo_csv(nome: str):
 
 def popular_sqlite_rs(nome_arquivo: str):
     """
-    Lê o CSV em data/raw/nome_arquivo, detecta a coluna de estado (Estado ou UF),
-    filtra linhas onde esse campo == 'RS' e salva em tabela SQLite
-    chamada '<nome_csv_sem_extensão>_rs'.
+    Lê o CSV em data/raw/nome_arquivo e salva em tabela SQLite
+    chamada '<nome_csv_sem_extensão>'.
     """
-    tabela_base = os.path.splitext(nome_arquivo)[0]            # ex: 'Comercio'
-    tabela_rs = tabela_base.lower() + "_rs"                    # ex: 'comercio_rs'
     caminho_csv = os.path.join(PASTA_RAW, nome_arquivo)
+    if not os.path.isfile(caminho_csv):
+        logging.error(f"[popular_sqlite_sem_filtro] CSV não encontrado: {caminho_csv}")
+        return
 
-    df = pd.read_csv(
-        caminho_csv,
-        sep=";",
-        decimal=",",
-        thousands=".",
-        encoding="latin-1",
-        low_memory=False
-    )
+    try:
+        df = pd.read_csv(caminho_csv)
+        logging.info(f"[popular_sqlite_sem_filtro] CSV lido: {nome_arquivo} ({len(df)} linhas)")
+    except Exception as e:
+        logging.error(f"[popular_sqlite_sem_filtro] Erro ao ler {nome_arquivo}: {e}")
+        return
 
-    # 1) Detecta qual coluna indica o estado: procura 'estado' ou 'uf' (case-insensitive)
-    cols_lower = [c.lower() for c in df.columns]
-    if "estado" in cols_lower:
-        state_col = df.columns[cols_lower.index("estado")]
-    elif "uf" in cols_lower:
-        state_col = df.columns[cols_lower.index("uf")]
-    else:
-        raise RuntimeError(f"CSV {nome_arquivo} não contém coluna 'Estado' nem 'UF'.")
-
-        # Se encontrou coluna de estado, filtra só RS
-    if state_col:
-        df = df[df[state_col].astype(str).str.upper() == "RS"]
-
-    # 3) Garante pasta de destino e carrega no SQLite
-    os.makedirs(PASTA_PROC, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    df.to_sql(tabela_rs, conn, if_exists="replace", index=False)
-
-    # 4) Cria índice em 'Ano' se existir
-    if "Ano" in df.columns:
-        conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{tabela_rs}_ano ON {tabela_rs}(Ano);")
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        base_name = os.path.splitext(nome_arquivo)[0].lower()
+        df.to_sql(base_name, conn, if_exists="replace", index=False)
+        conn.close()
+        logging.info(f"[popular_sqlite_sem_filtro] Tabela '{base_name}' criada com {len(df)} registros (sem filtro).")
+    except Exception as e:
+        logging.error(f"[popular_sqlite_sem_filtro] Erro ao gravar tabela '{base_name}': {e}")
 
 def treinar_modelo_forecast_rs():
     """
@@ -253,3 +236,4 @@ def atualizar_csvs_popular_db_e_treinar():
 
 if __name__ == "__main__":
     atualizar_csvs_popular_db_e_treinar()
+# %%
