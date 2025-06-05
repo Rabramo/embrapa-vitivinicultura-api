@@ -18,11 +18,16 @@ from app.auth import (
 )
 
 app = FastAPI(
-    title="Embrapa Vitivinicultura (RS) API com Auth",
-    description="API para consultar dados de vitivinicultura (apenas RS) e gerar forecast de produção.",
+    title="Embrapa Vitivinicultura no RS API com Auth",
+    description="API para consultar dados de vitivinicultura no Rio Grande  e gerar forecast de produção.",
     version="1.0.0"
 )
-
+@app.on_event("startup")
+async def on_startup():
+    # Apenas importa a função; chamar faz a criação do BD e da tabela users
+    from app.auth import init_db_and_users
+    init_db_and_users()
+    
 # =========================================
 # POST /token  → Autenticação e JWT
 # =========================================
