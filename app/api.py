@@ -22,12 +22,14 @@ app = FastAPI(
     description="API para consultar dados de vitivinicultura no Rio Grande  e gerar forecast de produção.",
     version="1.0.0"
 )
+
+
 @app.on_event("startup")
 async def on_startup():
     # Apenas importa a função; chamar faz a criação do BD e da tabela users
     from app.auth import init_db_and_users
     init_db_and_users()
-    
+
 # =========================================
 # POST /token  → Autenticação e JWT
 # =========================================
@@ -53,7 +55,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 # =================================================
 @app.get(
     "/producao",
-    summary="Consulta Produção de Uvas (RS) — intervalo de anos",
+    summary="Consulta Produção de Uvas — intervalo de anos",
     response_model=List[Dict]
 )
 async def get_producao(
@@ -69,7 +71,7 @@ async def get_producao(
     conn = sqlite3.connect(db_path)
     query = """
         SELECT *
-          FROM producao_rs
+          FROM producao
          WHERE Ano BETWEEN ? AND ?
          ORDER BY Ano ASC;
     """
@@ -105,7 +107,7 @@ async def get_comercializacao(
     conn = sqlite3.connect(db_path)
     query = """
         SELECT *
-          FROM comercio_rs
+          FROM comercio
          WHERE Ano BETWEEN ? AND ?
          ORDER BY Ano ASC;
     """
@@ -143,7 +145,7 @@ async def get_processamento(
     conn = sqlite3.connect(db_path)
     query = """
         SELECT *
-          FROM processamento_rs
+          FROM processamento
          WHERE Ano BETWEEN ? AND ?
            AND UPPER(tipo) = UPPER(?)
          ORDER BY Ano ASC;
@@ -183,7 +185,7 @@ async def get_importacao(
     conn = sqlite3.connect(db_path)
     query = """
         SELECT *
-          FROM importacao_rs
+          FROM importacao
          WHERE Ano BETWEEN ? AND ?
          ORDER BY Ano ASC;
     """
@@ -219,7 +221,7 @@ async def get_exportacao(
     conn = sqlite3.connect(db_path)
     query = """
         SELECT *
-          FROM exportacao_rs
+          FROM exportacao
          WHERE Ano BETWEEN ? AND ?
          ORDER BY Ano ASC;
     """
@@ -257,13 +259,13 @@ async def get_forecast_producao(
     db_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "embrapa.db")
     conn = sqlite3.connect(db_path)
     df = pd.read_sql(
-        "SELECT Ano, SUM(Quantidade) AS QtdTotal FROM producao_rs GROUP BY Ano ORDER BY Ano ASC;",
+        "SELECT Ano, SUM(Quantidade) AS QtdTotal FROM producao GROUP BY Ano ORDER BY Ano ASC;",
         conn
     )
     conn.close()
 
     if df.empty:
-        raise HTTPException(status_code=404, detail="Tabela producao_rs está vazia ou não existe.")
+        raise HTTPException(status_code=404, detail="Tabela producao está vazia ou não existe.")
 
     # Montar lista de histórico
     historico = [{"ano": int(row["Ano"]), "producao": float(row["QtdTotal"])} for _, row in df.iterrows()]
