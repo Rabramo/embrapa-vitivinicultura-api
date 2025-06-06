@@ -2,7 +2,9 @@
 
 import os
 import sqlite3
+
 from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
@@ -21,7 +23,6 @@ DATA_DIR = os.path.join(BASE_DIR, "..", "data")
 PASTA_PROC = os.path.join(DATA_DIR, "processed")
 DB_PATH = os.path.join(PASTA_PROC, "embrapa.db")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # ===============================
 # CONFIGURAÇÕES DE JWT
 # ===============================
