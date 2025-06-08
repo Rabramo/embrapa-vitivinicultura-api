@@ -1,13 +1,15 @@
 # app/api.py
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, Query, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
+from sanitize_api_response import baixar_e_limpar_json
 import sqlite3
 import os
 import pandas as pd
 import pickle
 from datetime import timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from app.auth import (
     authenticate_user,
@@ -22,6 +24,13 @@ app = FastAPI(
     description="API para consultar dados de vitivinicultura no Rio Grande  e gerar forecast de produção.",
     version="1.0.0"
 )
+
+# Lista segura de tabelas válidas
+TABELAS_VALIDAS = {
+    "expvinho", "expsuco", "expuva", "expespumantes","impvinhos",
+    "impfrescas", "impespumantes", "imppassas", "impvinhos", "impsucos"
+}
+
 
 
 @app.on_event("startup")
@@ -92,27 +101,42 @@ async def get_producao(
 # =================================================
 @app.get(
     "/comercializacao",
-    summary="Consulta Comercialização (RS) — intervalo de anos",
+    summary="Consulta Comercialização (RS) — intervalo de anos e produto",
     response_model=List[Dict]
 )
 async def get_comercializacao(
     ano_inicio: int,
     ano_fim: int,
+    produto: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user)
 ):
     """
-    Retorna todos os registros de comercialização (RS) entre ano_inicio e ano_fim (inclusive).
+    Retorna todos os registros de comercialização (RS) entre ano_inicio e ano_fim (inclusive),
+    com filtro opcional por produto.
     """
     db_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "embrapa.db")
     conn = sqlite3.connect(db_path)
-    query = """
-        SELECT *
-          FROM comercio
-         WHERE Ano BETWEEN ? AND ?
-         ORDER BY Ano ASC;
-    """
-    df = pd.read_sql(query, conn, params=(ano_inicio, ano_fim))
+
+    if produto:
+        query = """
+            SELECT *
+              FROM comercio
+             WHERE Ano BETWEEN ? AND ?
+               AND produto = ?
+             ORDER BY Ano ASC;
+        """
+        df = pd.read_sql(query, conn, params=(ano_inicio, ano_fim, produto))
+    else:
+        query = """
+            SELECT *
+              FROM comercio
+             WHERE Ano BETWEEN ? AND ?
+             ORDER BY Ano ASC;
+        """
+        df = pd.read_sql(query, conn, params=(ano_inicio, ano_fim))
+
     conn.close()
+
 
     if df.empty:
         raise HTTPException(
@@ -164,78 +188,41 @@ async def get_processamento(
 
     return df.to_dict(orient="records")
 
+# =================================================
+# GET /comex?produto={X}&ano_inicio={Y}&ano_fim={Z}
+# =================================================
 
-# =================================================
-# GET /importacao?ano_inicio={X}&ano_fim={Y}
-# =================================================
-@app.get(
-    "/importacao",
-    summary="Consulta Importação (RS) — intervalo de anos",
-    response_model=List[Dict]
-)
-async def get_importacao(
-    ano_inicio: int,
-    ano_fim: int,
-    current_user: dict = Depends(get_current_active_user)
+# @app.get("/comex", summary="Consulta dados de importação/exportação por produto e ano")
+async def get_comex(
+    produto: str = Query(..., description="Nome da tabela, ex: expvinho, imppassas"),
+    ano_inicio: int = Query(...),
+    ano_fim: int = Query(...),
 ):
-    """
-    Retorna registros de importação (RS) entre ano_inicio e ano_fim (inclusive).
-    """
+    if produto not in TABELAS_VALIDAS:
+        raise HTTPException(status_code=400, detail="Produto inválido")
+
+    # Caminho do banco
     db_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "embrapa.db")
     conn = sqlite3.connect(db_path)
-    query = """
-        SELECT *
-          FROM importacao
-         WHERE Ano BETWEEN ? AND ?
-         ORDER BY Ano ASC;
-    """
-    df = pd.read_sql(query, conn, params=(ano_inicio, ano_fim))
+
+    try:
+        df = pd.read_sql_query(f"SELECT * FROM {produto}", conn)
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=500, detail=str(e))
     conn.close()
 
-    if df.empty:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Nenhum dado de importação encontrado para RS entre {ano_inicio} e {ano_fim}."
-        )
+    # Transforma em formato longo
+    df_long = df.melt(id_vars=df.columns[0:2], var_name="ano", value_name="valor")
+    df_long["ano"] = pd.to_numeric(df_long["ano"], errors="coerce")
 
-    return df.to_dict(orient="records")
+    # Filtra por intervalo de anos
+    df_filtrado = df_long[df_long["ano"].between(ano_inicio, ano_fim)]
 
+    if df_filtrado.empty:
+        raise HTTPException(status_code=404, detail="Nenhum dado encontrado")
 
-# =================================================
-# GET /exportacao?ano_inicio={X}&ano_fim={Y}
-# =================================================
-@app.get(
-    "/exportacao",
-    summary="Consulta Exportação (RS) — intervalo de anos",
-    response_model=List[Dict]
-)
-async def get_exportacao(
-    ano_inicio: int,
-    ano_fim: int,
-    current_user: dict = Depends(get_current_active_user)
-):
-    """
-    Retorna registros de exportação (RS) entre ano_inicio e ano_fim (inclusive).
-    """
-    db_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "embrapa.db")
-    conn = sqlite3.connect(db_path)
-    query = """
-        SELECT *
-          FROM exportacao
-         WHERE Ano BETWEEN ? AND ?
-         ORDER BY Ano ASC;
-    """
-    df = pd.read_sql(query, conn, params=(ano_inicio, ano_fim))
-    conn.close()
-
-    if df.empty:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Nenhum dado de exportação encontrado para RS entre {ano_inicio} e {ano_fim}."
-        )
-
-    return df.to_dict(orient="records")
-
+    return df_filtrado.to_dict(orient="records")
 
 # =================================================
 # GET /forecast/producao?periodos={N}
@@ -307,3 +294,12 @@ async def get_forecast_producao(
 
     return {"historico": historico, "forecast": forecast_list}
 
+# =======================================================================
+# GET /openapi-limpo → Retorna OpenAPI sem acentos e caracteres especiais
+# =======================================================================
+
+@app.get("/openapi-limpo")
+def openapi_limpo():
+    url = "https://embrapa-vit-api.onrender.com/openapi.json"
+    json_limpo = baixar_e_limpar_json(url)
+    return JSONResponse(content=json_limpo)

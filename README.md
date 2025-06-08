@@ -7,12 +7,12 @@ Produção e processamento de suco, vinho e subprodutos.
 
 Informações de comercialização, importação e exportação.
 
-Previsão de produção para até seis meses com Prophet.
+Previsão de produção para até três meses com Prophet.
 
-Para testar as requisições e acessar a documentação, use o Swagger:
-https://embrapa-vit-api.onrender.com/docs.
-
-Utilizar o username Admin e senha Admin123.
+Para testar as requisições e acessar a documentação, use o Swagger, Redoc e .json:
+https://embrapa-vit-api.onrender.com/docs (Utilizar o username Admin e senha Admin123)
+https://embrapa-vit-api.onrender.com//redoc
+https://embrapa-vit-api.onrender.com//openapi.json
 
 
 # Arquiterura Embrapa Vitivinicultura API
@@ -22,23 +22,23 @@ Utilizar o username Admin e senha Admin123.
 # Detalhamento da Arquitetura
 
 ## 1. Ingestão de Dados (Sync & Process)
-Agendador / Startup Hook
+### Agendador / Startup Hook
 
 Ao iniciar (ou numa rotina diária agendada, por exemplo via cron dentro do container), dispara o script sync_and_process.py.
 
-Download de CSVs
+### Download de CSVs
 
 O script faz um HTTP GET na página de index (/download/) da Embrapa, extrai a lista de arquivos e suas datas de modificação.
 
 Compara com um arquivo local state.json para saber quais são novos ou atualizados.
 
-Detecção e Leitura de Cabeçalho
+### Detecção e Leitura de Cabeçalho
 
 Para cada CSV novo/atualizado, lê o arquivo em modo texto buscando a linha que de fato contém o cabeçalho (coluna “UF”, “ID”, “Produto” ou “Ano”).
 
 Faz pd.read_csv(..., sep=";", header=linha_detectada) (com fallback para vírgula, se necessário).
 
-Normalização das Colunas-Ano
+### Normalização das Colunas-Ano
 
 Converte todas as colunas cujo nome seja um ano (quatro dígitos) para int, coerindo valores inválidos para zero.
 
@@ -55,11 +55,11 @@ Cada CSV vira uma tabela no SQLite (<nome_csv_sem_extensão>, tudo em minúscula
 Ex.: Producao.csv → tabela producao (Quantidade por Produto e Ano),
 Comercio.csv → comercio, etc.
 
-Treino de Modelo de Forecast (Prophet)
+### Treino de Modelo de Forecast (Prophet)
 
 Se a tabela producao mudou, o script lê todos os anos e quantidades, agrupa por ano, treina um Prophet para previsão futura e salva o modelo serializado em models/forecast_producao_rs.pkl.
 
-Estado Local Atualizado
+### Estado Local Atualizado
 
 Atualiza o state.json com as novas datas de modificação para não baixar o mesmo CSV novamente.
 
@@ -73,17 +73,17 @@ Modelos: models/*.pkl — arquivos serializados para previsão.
 Logs: logs/update.log — histórico de downloads, leituras, erros e treinos.
 
 ## 3. API REST (FastAPI)
-Inicialização
+### Inicialização
 
 FastAPI carrega na inicialização o SQLite (embrapa.db) e os modelos (quando usados).
 
-Autenticação JWT
+### Endpoint de Autenticação JWT
 
 Endpoint POST /token: recebe username/password, verifica em tabela users (com senhas bcrypt), gera JWT com tempo de vida configurável.
 
 Todos os endpoints protegidos exigem header Authorization: Bearer <token>.
 
-Endpoints de Consulta
+###  Endpoints de Consulta
 
 GET /producao?ano_inicio=&ano_fim=
 
@@ -97,30 +97,28 @@ GET /exportacao?ano_inicio=&ano_fim=
 
 Cada um monta uma query SQL no SQLite, filtra por intervalo de anos e retorna JSON.
 
-Endpoint de Forecast
+### Endpoint de Forecast
 
 GET /forecast/producao?periodos= (protegido)
 
 Carrega o modelo Prophet (.pkl), gera o futuro dataframe, faz predict() e devolve histórico + previsões.
 
-Documentação Automática
+### Documentação Automática
 
-Swagger UI disponível em /docs
-
-ReDoc em /redoc
+Swagger UI, Redoc e onpenai.json.
 
 ## 4. Containerização e Deploy
-Dockerfile
+### Dockerfile
 
-Imagem base Python 3.11-slim
+Imagem base Python 3.11-slim.
 
 Copia código, instala dependências (requirements.txt), define CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"].
 
-Volumes
+### Volumes
 
 Mapeia data/raw, data/processed, models, logs para armazenamento persistente no host ou serviço de arquivos do provedor.
 
-Deploy em Render (ou similar)
+### Deploy em Render
 
 Push no GitHub dispara build automático no Render.
 
@@ -128,35 +126,35 @@ Render instala dependências, constrói a imagem, executa o container.
 
 Variáveis de ambiente (p.ex. JWT_SECRET_KEY) configuradas no painel.
 
-Agendamento da Ingestão
+### Agendamento da Ingestão
 
-Pode usar o próprio mecanismo de tarefas agendadas do Render, ou um cron interno no container que chama python app/sync_and_process.py todas as noites.
+Cron interno no container que chama python app/sync_and_process.py todas as noites.
 
 ## 5. Fluxo de CI/CD
-Desenvolvimento
+### Desenvolvimento
 
 Branch main no GitHub contém código estável.
 
 Pull requests revisados e mesclados.
 
-Build & Testes
+### Build & Testes
 
-GitHub Actions (opcional) roda linters e testes unitários.
+GitHub Actions roda linters e testes unitários.
 
-Deploy Automático
+### Deploy Automático
 
 Cada push em main aciona o build no Render.
 
 Logs de build e deploy ficam acessíveis no painel do Render.
 
 ## 6. Usuário Final / Cliente
-Consumidor da API
+### Consumidor da API
 
 Pode ser um front-end React, um notebook Python, ou qualquer cliente HTTP.
 
 Autentica via /token, usa o JWT nos headers para consultar dados e previsões.
 
-Observabilidade
+### Observabilidade
 
 Logs de ingestão e API mantidos em arquivos.
 
