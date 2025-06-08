@@ -44,15 +44,9 @@ Faz pd.read_csv(..., sep=";", header=linha_detectada) (com fallback para vírgul
 
 Converte todas as colunas cujo nome seja um ano (quatro dígitos) para int, coerindo valores inválidos para zero.
 
-No caso do arquivo de produção, filtra somente as linhas do estado RS e faz um melt para gerar duas colunas fixas:
+### Gravação em Banco SQLite
 
-Ano (int)
-
-Quantidade (int)
-
-Gravação em Banco SQLite
-
-Cada CSV vira uma tabela no SQLite (<nome_csv_sem_extensão>, tudo em minúsculas).
+Os .csv importação e exportação viram tabela única no db.
 
 Ex.: Producao.csv → tabela producao (Quantidade por Produto e Ano),
 Comercio.csv → comercio, etc.

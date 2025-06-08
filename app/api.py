@@ -103,6 +103,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def get_producao(
     ano_inicio: int,
     ano_fim: int,
+    control: Optional[str] = None,
+    produto: Optional[str] = None   
     current_user: dict = Depends(get_current_active_user)
 ):
     """
@@ -191,7 +193,7 @@ async def get_comercializacao(
 async def get_processamento(
     ano_inicio: int,
     ano_fim: int,
-    tipo: str,
+    tipo: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user)
 ):
     """
@@ -225,7 +227,7 @@ async def get_processamento(
 # GET /comex?produto={X}&ano_inicio={Y}&ano_fim={Z}
 # =================================================
 
-# @app.get("/comex", summary="Consulta dados de importação/exportação por produto e ano")
+@app.get("/comex", summary="Consulta dados de importação/exportação por produto e ano")
 async def get_comex(
     produto: str = Query(..., description="Nome da tabela, ex: expvinho, imppassas"),
     ano_inicio: int = Query(...),
