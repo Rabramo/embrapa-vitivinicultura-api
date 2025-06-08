@@ -4,6 +4,7 @@ from fastapi import FastAPI, Query, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from app.sanitize_api_response import limpar_json
 import sqlite3
 import os
 import pandas as pd
@@ -35,9 +36,9 @@ async def lifespan(app: FastAPI):
         "https://vitibrasil.cnpuv.embrapa.br/download/ComercioExterior.csv"
     ]
 
-    # Baixa e limpa cada JSON
+    # Limpa cada JSON
     for url in urls:
-        baixar_e_limpar_json(url)
+        limpar_json(url)
 
     # Lê CSVs e popular o SQLite embrapa.db
     popular_sqlite()
@@ -329,5 +330,5 @@ async def get_forecast_producao(
 @app.get("/openapi-limpo")
 def openapi_limpo():
     url = "https://embrapa-vit-api.onrender.com/openapi.json"
-    json_limpo = baixar_e_limpar_json(url)
+    json_limpo = limpar_json(url)
     return JSONResponse(content=json_limpo)
