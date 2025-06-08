@@ -83,25 +83,51 @@ Endpoint POST /token: recebe username/password, verifica em tabela users (com se
 
 Todos os endpoints protegidos exigem header Authorization: Bearer <token>.
 
-###  Endpoints de Consulta
+###  Inicialização
 
-GET /producao?ano_inicio=&ano_fim=
+Ao iniciar a aplicação, a API executa um ciclo lifespan que:
 
-GET /processamento?ano_inicio=&ano_fim=&tipo=
+- Cria ou atualiza o banco de autenticação (users.db)
+- Baixa arquivos JSON da Embrapa e salva como CSV
+- Popula o banco SQLite (embrapa.db) com os dados processados
+- Remove arquivos temporários de data/raw/
 
-GET /comercializacao?ano_inicio=&ano_fim=
+### Endpoint de Autenticação (JWT)
 
-GET /importacao?ano_inicio=&ano_fim=
+- POST /token: autentica com username/password e retorna um JWT com tempo de expiração configurável.
+Todos os endpoints protegidos exigem:
+Authorization: Bearer <token>
 
-GET /exportacao?ano_inicio=&ano_fim=
+### Endpoints de Consulta
+ 
+Endpoint	Descrição
+GET /producao	Produção de uvas (intervalo de anos) (protegido)
+GET /processamento	Processamento por tipo de uva (protegido)
+GET /comercializacao	Comercialização de produtos vitivinícolas (protegido)
+Parâmetros opcionais: ano_inicio, ano_fim, tipo, produto.
 
-Cada um monta uma query SQL no SQLite, filtra por intervalo de anos e retorna JSON.
+### Endpoint de Comércio Exterior
+
+GET /comex  (protegido)
+
+Consulta dados de importação ou exportação por produto (tabela) e intervalo de anos.
+
+Produtos válidos para exportação começam com exp e importação, imp:
+expvinho, expsuco, expuva, expespumantes, impvinhos, impfrescas, impespumantes, imppassas, impsucos.
+
+Retorno em formato longo: ano, país e valor.
+
 
 ### Endpoint de Forecast
 
-GET /forecast/producao?periodos= (protegido)
+GET /forecast/producao (protegido)
 
 Carrega o modelo Prophet (.pkl), gera o futuro dataframe, faz predict() e devolve histórico + previsões.
+
+### Endpoint para limpar Json
+
+GET /openapi-limpo
+Consulta a especificação OpenAPI da API publicada (em JSON) e remove caracteres especiais, acentos e espaços para facilitar uso por sistemas externos.
 
 ### Documentação Automática
 

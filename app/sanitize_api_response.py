@@ -17,8 +17,16 @@ def limpar_json(obj):
         return remover_acentos(obj)
     return obj
 
-def baixar_e_limpar_json(url: str):
-    response = requests.get(url)
-    response.encoding = 'utf-8'
-    print("[DEBUG] Fazendo download...")
-    return limpar_json(response.json())
+
+    # 1. Download CSV da URL
+    resposta = requests.get(url)
+    if resposta.status_code != 200:
+        raise Exception(f"Erro ao baixar {url}: {resposta.status_code}")
+    
+    caminho_csv = os.path.join(raw_dir, f"{nome_arquivo}.csv")
+
+    # 2. Grava o conteúdo em arquivo
+    with open(caminho_csv, "wb") as f:
+        f.write(resposta.content)
+    
+    print(f"[OK] CSV baixado e salvo em: {caminho_csv}")

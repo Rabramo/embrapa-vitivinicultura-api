@@ -27,8 +27,18 @@ async def lifespan(app: FastAPI):
     # Inicializa usuários e banco de autenticação
     init_db_and_users()
 
-    # Baixa JSON, limpa, salva CSV
-    baixar_e_limpar_json()
+    # Lista de URLs dos arquivos a baixar
+    urls = [
+        "https://vitibrasil.cnpuv.embrapa.br/download/Producao.csv",
+        "https://vitibrasil.cnpuv.embrapa.br/download/Uva.csv",
+        "https://vitibrasil.cnpuv.embrapa.br/download/Vinho.csv",
+        "https://vitibrasil.cnpuv.embrapa.br/download/Suco.csv",
+        "https://vitibrasil.cnpuv.embrapa.br/download/ComercioExterior.csv"
+    ]
+
+    # Baixa e limpa cada JSON
+    for url in urls:
+        baixar_e_limpar_json(url)
 
     # Lê CSVs e popular o SQLite embrapa.db
     popular_sqlite()
@@ -42,7 +52,6 @@ async def lifespan(app: FastAPI):
             if f.endswith(".json") or f.endswith(".csv"):
                 os.remove(os.path.join(raw_path, f))
         print("[lifespan] Arquivos temporários removidos de data/raw.")
-
 
 app = FastAPI(
     title="Embrapa Vitivinicultura no RS API com Auth",
