@@ -36,17 +36,21 @@ async def lifespan(app: FastAPI):
         "https://vitibrasil.cnpuv.embrapa.br/download/ComercioExterior.csv"
     ]
 
-    # Limpa cada JSON
+    # Baixa e limpa os arquivos
     for url in urls:
         limpar_json(url)
 
-    # Lê CSVs e popular o SQLite embrapa.db
-    popular_sqlite()
+    # Lê todos os CSVs da pasta data/raw e popula o SQLite
+    raw_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+    if os.path.exists(raw_path):
+        for f in os.listdir(raw_path):
+            if f.endswith(".csv"):
+                popular_sqlite(f)
 
+    # Ponto onde a aplicação inicia o ciclo de vida
     yield
 
-    # Cleanup: apaga arquivos temporários em data/raw
-    raw_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+    # Cleanup: remove arquivos temporários
     if os.path.exists(raw_path):
         for f in os.listdir(raw_path):
             if f.endswith(".json") or f.endswith(".csv"):
