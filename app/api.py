@@ -3,7 +3,6 @@
 from fastapi import FastAPI, Query, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
-from app.sanitize_api_response import baixar_e_limpar_json
 from contextlib import asynccontextmanager
 import sqlite3
 import os

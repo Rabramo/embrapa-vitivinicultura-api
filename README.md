@@ -11,7 +11,9 @@ Previsão de produção para até três meses com Prophet.
 
 Para testar as requisições e acessar a documentação, use o Swagger, Redoc e .json:
 https://embrapa-vit-api.onrender.com/docs (Utilizar o username Admin e senha Admin123)
+
 https://embrapa-vit-api.onrender.com//redoc
+
 https://embrapa-vit-api.onrender.com//openapi.json
 
 
@@ -94,7 +96,7 @@ Ao iniciar a aplicação, a API executa um ciclo lifespan que:
 
 ### Endpoint de Autenticação (JWT)
 
-- POST /token: autentica com username/password e retorna um JWT com tempo de expiração configurável.
+POST /token: autentica com username/password e retorna um JWT com tempo de expiração configurável.
 Todos os endpoints protegidos exigem:
 Authorization: Bearer <token>
 
