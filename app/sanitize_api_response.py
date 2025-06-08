@@ -20,4 +20,5 @@ def limpar_json(obj):
 def baixar_e_limpar_json(url: str):
     response = requests.get(url)
     response.encoding = 'utf-8'
+    print("[DEBUG] Fazendo download...")
     return limpar_json(response.json())

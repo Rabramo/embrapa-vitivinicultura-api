@@ -158,7 +158,10 @@ def ler_csv_embrapa(caminho_csv: str) -> pd.DataFrame:
 # POPULAR SQLITE
 
 def popular_sqlite(nome_arquivo: str):
+    print(f"[DEBUG] Início de popular_sqlite com {nome_arquivo}")
     caminho_csv = os.path.join(PASTA_RAW, nome_arquivo)
+    print(f"[DEBUG] Caminho esperado do CSV: {caminho_csv}")
+    
     if not os.path.isfile(caminho_csv):
         logging.error(f"[popular_sqlite] CSV não encontrado: {caminho_csv}")
         return

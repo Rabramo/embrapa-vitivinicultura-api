@@ -3,27 +3,54 @@
 from fastapi import FastAPI, Query, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
-from sanitize_api_response import baixar_e_limpar_json
+from app.sanitize_api_response import baixar_e_limpar_json
+from contextlib import asynccontextmanager
 import sqlite3
 import os
 import pandas as pd
 import pickle
 from datetime import timedelta
 from typing import List, Dict, Optional
+from app.sync_and_process import popular_sqlite
 
 from app.auth import (
     authenticate_user,
     create_access_token,
     get_current_active_user,
     Token,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    init_db_and_users
 )
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Inicializa usuários e banco de autenticação
+    init_db_and_users()
+
+    # Baixa JSON, limpa, salva CSV
+    baixar_e_limpar_json()
+
+    # Lê CSVs e popular o SQLite embrapa.db
+    popular_sqlite()
+
+    yield
+
+    # Cleanup: apaga arquivos temporários em data/raw
+    raw_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+    if os.path.exists(raw_path):
+        for f in os.listdir(raw_path):
+            if f.endswith(".json") or f.endswith(".csv"):
+                os.remove(os.path.join(raw_path, f))
+        print("[lifespan] Arquivos temporários removidos de data/raw.")
+
 
 app = FastAPI(
     title="Embrapa Vitivinicultura no RS API com Auth",
-    description="API para consultar dados de vitivinicultura no Rio Grande  e gerar forecast de produção.",
-    version="1.0.0"
+    description="API para consultar dados de vitivinicultura no Rio Grande e gerar forecast de produção.",
+    version="1.0.0",
+    lifespan=lifespan
 )
+
 
 # Lista segura de tabelas válidas
 TABELAS_VALIDAS = {
@@ -31,13 +58,6 @@ TABELAS_VALIDAS = {
     "impfrescas", "impespumantes", "imppassas", "impvinhos", "impsucos"
 }
 
-
-
-@app.on_event("startup")
-async def on_startup():
-    # Apenas importa a função; chamar faz a criação do BD e da tabela users
-    from app.auth import init_db_and_users
-    init_db_and_users()
 
 # =========================================
 # POST /token  → Autenticação e JWT
