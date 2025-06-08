@@ -10,40 +10,18 @@ Informações de comercialização, importação e exportação.
 Previsão de produção para até seis meses com Prophet.
 
 Para testar as requisições e acessar a documentação, use o Swagger:
-https://embrapa-vit-api.onrender.com/docs
+https://embrapa-vit-api.onrender.com/docs.
 
 Utilizar o username Admin e senha Admin123.
 
 
-## Arquiterura Embrapa Vitivinicultura API
-```mermaid
-flowchart LR
-  subgraph Cliente
-    U[Usuário / App Cliente]
-  end
+# Arquiterura Embrapa Vitivinicultura API
 
-  subgraph Servidor [Render (container)]
-    API[FastAPI App<br/>(uvicorn)]
-    DB[SQLite DB<br/>data/processed/embrapa.db]
-    MODELO[Prophet Model<br/>models/forecast_producao_rs.pkl]
-  end
+![Arquiterura](assets/arqui_api.png)
 
-  subgraph Ingestão [Rotina Noturna]
-    SYNC[sync_and_process.py]
-    RAW[data/raw/*.csv]
-  end
+# Detalhamento da Arquitetura
 
-  U -->|HTTPS<br/>Authorization| API
-  API -->|SQL queries| DB
-  API -->|Carrega .pkl| MODELO
-
-  SYNC -->|Download .csv| RAW
-  SYNC -->|Normaliza & grava| DB
-  SYNC -->|Treina, salva| MODELO'''
-
-## Detalhamento da Arquitetura
-
-1. Ingestão de Dados (Sync & Process)
+## 1. Ingestão de Dados (Sync & Process)
 Agendador / Startup Hook
 
 Ao iniciar (ou numa rotina diária agendada, por exemplo via cron dentro do container), dispara o script sync_and_process.py.
@@ -85,7 +63,7 @@ Estado Local Atualizado
 
 Atualiza o state.json com as novas datas de modificação para não baixar o mesmo CSV novamente.
 
-2. Armazenamento e Persistência
+## 2. Armazenamento e Persistência
 Raw Data: data/raw/*.csv — arquivos originais baixados.
 
 Processed Data: data/processed/embrapa.db — arquivo SQLite com todas as tabelas normalizadas.
@@ -94,7 +72,7 @@ Modelos: models/*.pkl — arquivos serializados para previsão.
 
 Logs: logs/update.log — histórico de downloads, leituras, erros e treinos.
 
-3. API REST (FastAPI)
+## 3. API REST (FastAPI)
 Inicialização
 
 FastAPI carrega na inicialização o SQLite (embrapa.db) e os modelos (quando usados).
@@ -131,7 +109,7 @@ Swagger UI disponível em /docs
 
 ReDoc em /redoc
 
-4. Containerização e Deploy
+## 4. Containerização e Deploy
 Dockerfile
 
 Imagem base Python 3.11-slim
@@ -154,7 +132,7 @@ Agendamento da Ingestão
 
 Pode usar o próprio mecanismo de tarefas agendadas do Render, ou um cron interno no container que chama python app/sync_and_process.py todas as noites.
 
-5. Fluxo de CI/CD
+## 5. Fluxo de CI/CD
 Desenvolvimento
 
 Branch main no GitHub contém código estável.
@@ -171,7 +149,7 @@ Cada push em main aciona o build no Render.
 
 Logs de build e deploy ficam acessíveis no painel do Render.
 
-6. Usuário Final / Cliente
+## 6. Usuário Final / Cliente
 Consumidor da API
 
 Pode ser um front-end React, um notebook Python, ou qualquer cliente HTTP.
