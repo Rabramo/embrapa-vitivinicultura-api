@@ -10,15 +10,15 @@ Informações de comercialização, importação e exportação.
 Previsão de produção para até três meses com Prophet.
 
 Para testar as requisições e acessar a documentação, use o Swagger, Redoc e .json:
-https://embrapa-vit-api.onrender.com/docs (Utilizar o username Admin e senha Admin123)
+https:/embrapa-vit-api.onrender.com/docs (Utilizar o username Admin e senha Admin123)
 
-https://embrapa-vit-api.onrender.com//redoc
+https:/embrapa-vit-api.onrender.com/redoc
 
-https://embrapa-vit-api.onrender.com//openapi.json
+https:/embrapa-vit-api.onrender.com/openapi.json
 
 # Sobre a origim dos dados
 Os dados originais podem ser consultados em:
-http://vitibrasil.cnpuv.embrapa.br/
+http:/vitibrasil.cnpuv.embrapa.br/
 
 Recomendamos a consulta para conhecer os argumentos que podem ser utilizados na API.
 
