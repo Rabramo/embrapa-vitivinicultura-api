@@ -16,6 +16,15 @@ https://embrapa-vit-api.onrender.com//redoc
 
 https://embrapa-vit-api.onrender.com//openapi.json
 
+# Sobre a origim dos dados
+Os dados originais podem ser consultados em:
+http://vitibrasil.cnpuv.embrapa.br/
+
+Recomendamos a consulta para conhecer os argumentos que podem ser utilizados na API.
+
+Esta API organiza e disponibiliza dados da Embrapa sobre o processamento de uvas, produção e comercialização de vinhos, sucos e derivados no Estado do Rio Grande do Sul — responsável por mais de 90% da produção nacional — além de informações sobre importações e exportações desses produtos.
+
+
 
 # Arquiterura Embrapa Vitivinicultura API
 

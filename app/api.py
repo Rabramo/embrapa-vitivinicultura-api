@@ -229,7 +229,7 @@ async def get_processamento(
 
 @app.get("/comex", summary="Consulta dados de importação/exportação por produto e ano")
 async def get_comex(
-    produto: str = Query(..., description="Nome da tabela, ex: expvinho, imppassas"),
+    produto: str = Query(..., description="Nome da tabela"),
     ano_inicio: int = Query(...),
     ano_fim: int = Query(...),
 ):
