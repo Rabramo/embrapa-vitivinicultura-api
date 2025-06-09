@@ -3,8 +3,8 @@
 from fastapi import FastAPI, Query, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 from app.sanitize_api_response import limpar_json
+from app.sync_and_process import atualizar_csvs_popular_db_e_treinar
 import sqlite3
 import os
 import pandas as pd
@@ -19,58 +19,24 @@ from app.auth import (
     get_current_active_user,
     Token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    init_db_and_users
+    
 )
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Inicializa usuários e banco de autenticação
-    init_db_and_users()
-
-    # Lista de URLs dos arquivos a baixar
-    urls = [
-        "https://vitibrasil.cnpuv.embrapa.br/download/Producao.csv",
-        "https://vitibrasil.cnpuv.embrapa.br/download/Uva.csv",
-        "https://vitibrasil.cnpuv.embrapa.br/download/Vinho.csv",
-        "https://vitibrasil.cnpuv.embrapa.br/download/Suco.csv",
-        "https://vitibrasil.cnpuv.embrapa.br/download/ComercioExterior.csv"
-    ]
-
-    # Baixa e limpa os arquivos
-    for url in urls:
-        limpar_json(url)
-
-    # Lê todos os CSVs da pasta data/raw e popula o SQLite
-    raw_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
-    if os.path.exists(raw_path):
-        for f in os.listdir(raw_path):
-            if f.endswith(".csv"):
-                popular_sqlite(f)
-
-    # Ponto onde a aplicação inicia o ciclo de vida
-    yield
-
-    # Cleanup: remove arquivos temporários
-    if os.path.exists(raw_path):
-        for f in os.listdir(raw_path):
-            if f.endswith(".json") or f.endswith(".csv"):
-                os.remove(os.path.join(raw_path, f))
-        print("[lifespan] Arquivos temporários removidos de data/raw.")
 
 app = FastAPI(
     title="Embrapa Vitivinicultura no RS API com Auth",
     description="API para consultar dados de vitivinicultura no Rio Grande e gerar forecast de produção.",
     version="1.0.0",
-    lifespan=lifespan
-)
 
+)
 
 # Lista segura de tabelas válidas
 TABELAS_VALIDAS = {
     "expvinho", "expsuco", "expuva", "expespumantes","impvinhos",
-    "impfrescas", "impespumantes", "imppassas", "impvinhos", "impsucos"
+    "impfrescas", "impespumantes", "imppassas", "impsucos", "processaamericanas",
+     "processaviniferas", "processamesa", "processasemclass", "producao", "comercio"
 }
 
+atualizar_csvs_popular_db_e_treinar()
 
 # =========================================
 # POST /token  → Autenticação e JWT
@@ -336,5 +302,5 @@ async def get_forecast_producao(
 @app.get("/openapi-limpo")
 def openapi_limpo():
     url = "https://embrapa-vit-api.onrender.com/openapi.json"
-    json_limpo = limpar_json(url)
+    json_limpo = limpar_(url)
     return JSONResponse(content=json_limpo)
