@@ -104,7 +104,7 @@ async def get_producao(
     ano_inicio: int,
     ano_fim: int,
     control: Optional[str] = None,
-    produto: Optional[str] = None   
+    produto: Optional[str] = None, 
     current_user: dict = Depends(get_current_active_user)
 ):
     """
